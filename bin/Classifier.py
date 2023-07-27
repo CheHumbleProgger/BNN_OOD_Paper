@@ -1,29 +1,56 @@
 import numpy as np
+import torch
+import bin.LaplaceApproxClassif as LAC
 
 class Classifier:
-    def __init__(self,model):
+    def __init__(self, model):
         self.model = model
         self.feature_selection = False
+       # if torch.cuda.is_available():  #TODO add that model should be a subclass of torch.nn.Module
+       #     model.cuda()  # TODO send model to CUDA. Doesn't work? Why? Inputs are on CPU?
 
     def predict(self,x_features):
         if self.feature_selection:
             x_features_selected = self.feature_selection.transform(x_features)
         else:
             x_features_selected = x_features
-        y_predicted = self.model.predict(x_features_selected)
+
+        #y_predicted = self.model.predict(x_features_selected)
+
+        y_predicted = LAC.predict(self.model, x_features_selected)
+
         return y_predicted
 
-    def fit(self,x_features,y_train):
+    def fit(self, x_features, y_train):
         feature_selection = True
         if feature_selection:
             feature_selection = FeatureSelect()
             self.feature_selection = feature_selection
-            x_train_features_selected = self.feature_selection.fit(x_features,y_train)
+            x_train_features_selected = self.feature_selection.fit(x_features, y_train)
+
+            #i1 = 0
+            #for x,y in zip(x_train_features_selected, y_train):
+             #   print('x_tomodel: ', x, 'y_tomodel: ', y)
+              #  i1 += 1
+               # if i1 > 101:
+                #    break
         else:
             x_train_features_selected = x_features
-        self.model.fit(x_train_features_selected,y_train)
-        y_predicted = self.model.predict(x_train_features_selected)
-        return y_predicted
+
+            #i2 = 0
+            #for x,y in zip(x_train_features_selected, y_train):
+             #   print('x_tomodel: ', x, 'y_tomodel: ', y)
+              #  i2 += 1
+               # if i2 > 101:
+                #    break
+
+        #train_loss = self.model.fit(x_train_features_selected, y_train)
+        #y_predicted = self.model.predict(x_train_features_selected)
+
+        train_loss = LAC.fit(self.model, x_train_features_selected, y_train, LAC.CrossEntropyWithLogPrior)
+        y_predicted = LAC.predict(self.model, x_train_features_selected)
+
+        return train_loss, y_predicted
 
 
 class FeatureSelect:
